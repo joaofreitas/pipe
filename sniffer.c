@@ -1,6 +1,6 @@
+#include <stdio.h>
 #include <pcap.h>
 #include <libnet.h>
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "sniffer.h"
 
 /************************
 DEFINES
@@ -20,18 +21,24 @@ DEFINES
 #define IP_V(ip)                (((ip)->ip_vhl) >> 4)
 
 /************************
-CONSTANTES
+GLOBAIS
 ************************/
 
 int LOOP_SNIFF = -1;			/* Sniffer vai ficar em loop */
 int listen_port = 0;
+
+const int CLIENT_MODE = 0;
+const int SERVER_MODE = 1;
 
 /************************
 FUNCÕES
 ************************/
 
 void
-got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
+got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
+
+void
+got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 
 void
 print_udp_header(const struct libnet_udp_hdr *udp);
@@ -62,7 +69,7 @@ void print_info(int count, const struct libnet_ipv4_hdr *ip, int size_ip) {
  * dissect/print packet
  */
 void
-got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
 	/* declare pointers to packet headers */
 	const struct libnet_ipv4_hdr *ip;              /* The IP header */
@@ -70,7 +77,42 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	
 	static int count = 1;                   /* packet counter */
 	int size_ip;
-	int size_transport_layer = 0;
+	
+	count++;
+
+	ip = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
+	size_ip = IP_HL(ip)*4;
+
+	if (size_ip < 20) {
+		printf("   * Invalid IP header length: %u bytes\n", size_ip);
+		return;
+	}
+
+	if (ip->ip_p == IPPROTO_UDP) {
+		/* determine protocol */	
+		if (ip->ip_p == IPPROTO_UDP) {
+			udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
+			
+			if (ntohs(udp->uh_sport) == listen_port) {
+				print_info(count, ip, size_ip);
+				print_udp_header(udp);
+			}
+		
+		}
+	}
+
+	return;
+}
+
+void
+got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+{
+	/* declare pointers to packet headers */
+	const struct libnet_ipv4_hdr *ip;              /* The IP header */
+	const struct libnet_udp_hdr *udp;		/* The UDP header */
+	
+	static int count = 1;                   /* packet counter */
+	int size_ip;
 	
 	count++;
 
@@ -99,7 +141,7 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 }
 
 void 
-create_sniffer(const char *dev, int s_port) 
+create_sniffer(const char *dev, const ip_info *data) 
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		/* error buffer */
 	pcap_t *handle;				/* packet capture handle */
@@ -109,7 +151,7 @@ create_sniffer(const char *dev, int s_port)
 	bpf_u_int32 mask;			/* subnet mask */
 	bpf_u_int32 net;			/* ip */
 
-	listen_port = s_port;
+	listen_port = data->constant_union.client_data->s_port;
 	if (dev == NULL) {
 
 		dev = pcap_lookupdev(errbuf);
@@ -160,8 +202,11 @@ create_sniffer(const char *dev, int s_port)
 		exit(EXIT_FAILURE);
 	}
 
-	/* now we can set our callback function */
-	pcap_loop(handle, LOOP_SNIFF, got_packet, NULL);
+	if (data->tag == SERVER_MODE) {
+		pcap_loop(handle, LOOP_SNIFF, got_packet_server, NULL);
+	} else {
+		pcap_loop(handle, LOOP_SNIFF, got_packet_client, NULL);
+	}
 
 	/* cleanup */
 	pcap_freecode(&fp);
