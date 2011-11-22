@@ -1,6 +1,7 @@
-#include <stdio.h>
-#include <pcap.h>
-#include "send_packet.c"
+#include <stdlib.h>
+#include <libnet.h>
+#include <sys/types.h>
+#include "structures.h"
 
-void
-got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
+int
+send_data(u_int16_t sp, u_int16_t dp, u_int16_t len, u_int8_t *payload, u_int32_t payload_s, char *ip_addr_str);

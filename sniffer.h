@@ -1,22 +1,15 @@
-#include <stdio.h>
 #include <pcap.h>
-
-typedef struct client_data_structure {
-	int s_port;
-} client_structure;
-
-typedef struct server_data_structure {
-	int s_port;
-	char *ip_addr;
-} server_structure;
-
-typedef struct ip_structure {
-	unsigned char tag;
-	union {
-		client_structure *client_data;
-		server_structure *server_data;
-	} constant_union;
-} ip_info;
+#include <libnet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include "structures.h"
+#include "send_packet.h"
 
 void
 create_sniffer(const char *dev, const ip_info *data);

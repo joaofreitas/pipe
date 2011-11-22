@@ -1,19 +1,9 @@
-#include <stdio.h>
-#include <pcap.h>
-#include <libnet.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include "sniffer.h"
 
 /************************
 DEFINES
 ************************/
+
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
 
@@ -26,6 +16,7 @@ GLOBAIS
 
 int LOOP_SNIFF = -1;			/* Sniffer vai ficar em loop */
 int listen_port = 0;
+int host_addr = 0;
 
 const int CLIENT_MODE = 0;
 const int SERVER_MODE = 1;
@@ -128,12 +119,7 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 		/* determine protocol */	
 		if (ip->ip_p == IPPROTO_UDP) {
 			udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
-			
-			if (ntohs(udp->uh_sport) == listen_port) {
-				print_info(count, ip, size_ip);
-				print_udp_header(udp);
-			}
-		
+//			send_data();
 		}
 	}
 

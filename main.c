@@ -7,6 +7,7 @@
 int main(int argc, char *argv[]) {
 	ip_info *data;
 
+/*
 	if (argc > 2) {
 		data = malloc(sizeof(ip_info));
 
@@ -15,7 +16,7 @@ int main(int argc, char *argv[]) {
 			data->constant_union.client_data = malloc(sizeof(client_structure));
 			data->constant_union.client_data->s_port = atoi(argv[2]);
 
-			printf("Iniciando modo server na porta %d\n", s_port);
+			printf("Iniciando modo server na porta %d\n", data->constant_union.client_data->s_port);
 			create_sniffer("wlan0", data);
 		} else {
 			data->tag = 1;
@@ -23,11 +24,16 @@ int main(int argc, char *argv[]) {
 			data->constant_union.server_data->ip_addr = argv[2];
 			data->constant_union.server_data->s_port = atoi(argv[3]);
 
-			printf("Iniciando modo cliente enviando na porta %d\n", s_port);
+			printf("Iniciando modo cliente enviando na porta %d\n", data->constant_union.server_data->s_port);
 			create_sniffer("wlan0", data);
 		}
 	} else {
 		printf("Não é o funcionamento correto desse programa...\n");
+	}
+*/
+
+	if (send_data(666, 666, LIBNET_UDP_H + 1, NULL, 0, "192.168.0.157") == -1) {
+		printf("Deu pau\n");
 	}
 
 	return 0;
