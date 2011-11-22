@@ -6,6 +6,7 @@
 
 int main(int argc, char *argv[]) {
 	ip_info *data;
+	unsigned char payload[] = "libnet :D";
 
 /*
 	if (argc > 2) {
@@ -32,7 +33,7 @@ int main(int argc, char *argv[]) {
 	}
 */
 
-	if (send_data(666, 666, LIBNET_UDP_H, NULL, 0, "192.168.0.157") == -1) {
+	if (send_data(22345, 22345, LIBNET_UDP_H, payload, sizeof(payload), "192.168.0.157") == -1) {
 		printf("Deu pau\n");
 	}
 
