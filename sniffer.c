@@ -16,10 +16,10 @@ GLOBAIS
 
 int LOOP_SNIFF = -1;			/* Sniffer vai ficar em loop */
 int listen_port = 0;
-int host_addr = 0;
+char *host_addr;
 
-const int CLIENT_MODE = 0;
-const int SERVER_MODE = 1;
+int CLIENT_MODE = 0;
+int SERVER_MODE = 1;
 
 /************************
 FUNCÕES
@@ -32,28 +32,12 @@ void
 got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 
 void
-print_udp_header(const struct libnet_udp_hdr *udp);
+print_info(int package_number, int size_ip, int size_udp_package);
 
-/*
- * imprime o cabeçalho udp e retorna o seu tamanho.
- */
-void
-print_udp_header(const struct libnet_udp_hdr *udp)
-{
-	printf("\t\tSrc port: %d\n", ntohs(udp->uh_sport));
-	printf("\t\tDst port: %d\n", ntohs(udp->uh_dport));
-	printf("\t\tSize udp packet: %d\n", ntohs(udp->uh_ulen));
-	
-}
-
-void print_info(int count, const struct libnet_ipv4_hdr *ip, int size_ip) {
-	printf("----------- Protocol: UDP -----------\n");
-	printf("Packet number %d:\n", count);
-	printf("Size ip: %d\n", size_ip);
-	
-	/* print source and destination IP addresses */
-	printf("\tFrom: %s\n", inet_ntoa(ip->ip_src));
-	printf("\tTo: %s\n", inet_ntoa(ip->ip_dst));
+void print_info(int package_number, int size_ip, int size_udp_package) {
+	printf("\n----------- Packet number %d -----------\n", package_number);
+	printf("\tTamanho total: %d\n", size_udp_package + size_ip);
+	printf("\tTamano do pacote recebido: %d\n", size_udp_package);
 }
 
 /*
@@ -65,11 +49,13 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	/* declare pointers to packet headers */
 	const struct libnet_ipv4_hdr *ip;              /* The IP header */
 	const struct libnet_udp_hdr *udp;		/* The UDP header */
+	package_info *package;
+	u_char *payload;
+	u_int8_t *ip_addr_p;					//Isso é para fins de teste
 	
 	static int count = 1;                   /* packet counter */
 	int size_ip;
 	
-	count++;
 
 	ip = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
 	size_ip = IP_HL(ip)*4;
@@ -80,16 +66,18 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	}
 
 	if (ip->ip_p == IPPROTO_UDP) {
-		/* determine protocol */	
-		if (ip->ip_p == IPPROTO_UDP) {
-			udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
+		udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
+		count++;
+
+		if (ntohs(udp->uh_dport) == listen_port) {
+			print_info(count, size_ip, ntohs(udp->uh_ulen));
+			package = (package_info *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H);
 			
-			if (ntohs(udp->uh_sport) == listen_port) {
-				print_info(count, ip, size_ip);
-				print_udp_header(udp);
-			}
-		
+			//Deveria reenviar o pacote
+			ip_addr_p = (u_int8_t*)(&package->ip_addr);
+			printf("Address read: %d.%d.%d.%d\n", ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
 		}
+		
 	}
 
 	return;
@@ -101,12 +89,11 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	/* declare pointers to packet headers */
 	const struct libnet_ipv4_hdr *ip;              /* The IP header */
 	const struct libnet_udp_hdr *udp;		/* The UDP header */
-	
 	static int count = 1;                   /* packet counter */
 	int size_ip;
+	u_int8_t *payload;
+	u_int32_t ip_addr;
 	
-	count++;
-
 	ip = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
 	size_ip = IP_HL(ip)*4;
 
@@ -116,11 +103,15 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	}
 
 	if (ip->ip_p == IPPROTO_UDP) {
-		/* determine protocol */	
-		if (ip->ip_p == IPPROTO_UDP) {
-			udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
-//			send_data();
-		}
+		count++;
+		udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
+
+		print_info(count, size_ip, ntohs(udp->uh_ulen));
+
+		payload = (u_int8_t *)(packet + LIBNET_ETH_H + size_ip); // Todos dados do UDP, inclusive com o cabeçalho.
+		ip_addr = convert_address(host_addr);
+
+		send_data(udp->uh_sport, listen_port, payload, ntohs(udp->uh_ulen), ip_addr);
 	}
 
 	return;
@@ -137,7 +128,6 @@ create_sniffer(const char *dev, const ip_info *data)
 	bpf_u_int32 mask;			/* subnet mask */
 	bpf_u_int32 net;			/* ip */
 
-	listen_port = data->constant_union.client_data->s_port;
 	if (dev == NULL) {
 
 		dev = pcap_lookupdev(errbuf);
@@ -158,8 +148,6 @@ create_sniffer(const char *dev, const ip_info *data)
 
 	/* print capture info */
 	printf("Device: %s\n", dev);
-	printf("Number of packets: %d\n", LOOP_SNIFF);
-	printf("Filter expression: %s\n", filter_exp);
 
 	/* open capture device */
 	handle = pcap_open_live(dev, SNAP_LEN, 1, 1000, errbuf);
@@ -187,13 +175,23 @@ create_sniffer(const char *dev, const ip_info *data)
 		    filter_exp, pcap_geterr(handle));
 		exit(EXIT_FAILURE);
 	}
+	
+	
+	if (init_context_libnet() == -1) {
+		exit(EXIT_FAILURE);
+	}
+	
+	printf("listen port: %d", listen_port);
 
 	if (data->tag == SERVER_MODE) {
+		listen_port = data->constant_union.server_data->s_port;
 		pcap_loop(handle, LOOP_SNIFF, got_packet_server, NULL);
 	} else {
+		host_addr = data->constant_union.client_data->ip_addr;
+		listen_port = data->constant_union.client_data->s_port;
 		pcap_loop(handle, LOOP_SNIFF, got_packet_client, NULL);
 	}
-
+	
 	/* cleanup */
 	pcap_freecode(&fp);
 	pcap_close(handle);
