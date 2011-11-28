@@ -21,7 +21,7 @@ typedef struct ip_structure {
 } ip_info;
 
 typedef struct package_structure {
-	u_int32_t ip_addr;
+	u_int32_t dst_ip_addr;
 	u_int8_t *payload;
 } package_info;
 

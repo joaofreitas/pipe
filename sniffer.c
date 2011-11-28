@@ -34,6 +34,23 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 void
 print_info(int package_number, int size_udp_package);
 
+package_info *
+create_package(struct in_addr ip_addr, u_int8_t *payload);
+
+package_info *
+create_package(struct in_addr ip_addr, u_int8_t *payload){
+	package_info *package;
+	char *ip_addr_str;
+	
+	package = malloc(sizeof(package_info ));
+
+	ip_addr_str = inet_ntoa(ip_addr);
+	package->dst_ip_addr = convert_address(ip_addr_str);;
+	package->payload = payload;
+	
+	return package;
+}
+
 void print_info(int package_number, int size_udp_package) {
 	printf("\n----------- Packet number %d -----------\n", package_number);
 	printf("\tTamano do pacote recebido: %d\n", size_udp_package);
@@ -47,8 +64,9 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	const struct libnet_udp_hdr *udp;		/* The UDP header */
 	static int count = 0;                   /* packet counter */
 	int size_ip;
+	package_info *package;
 	u_int8_t *payload;
-	u_int32_t ip_addr;
+	u_int32_t ip_addr, package_size;
 	
 	ip = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
 	size_ip = IP_HL(ip)*4;
@@ -58,15 +76,15 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	}
 
 	udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
-	if (ip->ip_p == IPPROTO_UDP && ntohs(udp->uh_sport) != 20000) {	//Só posso mandar os pacotes que saem dessa porta, não os que chegam
-		count++;
+	count++;
+	print_info(count, ntohs(udp->uh_ulen));
 
-		payload = (u_int8_t *) udp; // Todos dados do UDP, inclusive com o cabeçalho.
-		ip_addr = convert_address(host_addr);
-		print_info(count, ntohs(udp->uh_ulen));
-
-		send_data(listen_port, payload, ntohs(udp->uh_ulen), ip_addr);
-	}
+	payload = (u_int8_t *) udp; // Todos dados do UDP, inclusive com o cabeçalho.
+	ip_addr = convert_address(host_addr);
+	
+	package = create_package(ip->ip_src, payload);
+	package_size = ntohs(udp->uh_ulen)+sizeof(package_info);
+	send_data(listen_port, package, package_size, ip_addr);
 
 	return;
 }
@@ -83,10 +101,9 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	package_info *package;
 	u_char *payload;
 	u_int8_t *ip_addr_p;					//Isso é para fins de teste
-	
-	static int count = 1;					/* packet counter */
+
+	static int count = 1;
 	int size_ip;
-	
 
 	ip = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
 	size_ip = IP_HL(ip)*4;
@@ -96,22 +113,31 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 		return;
 	}
 
-	if (ip->ip_p == IPPROTO_UDP) {
-		wrap_udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
-		count++;
+	wrap_udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
+	count++;
 
-		if (ntohs(wrap_udp->uh_dport) == listen_port) {
-			udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H); // Pacote UDP dentro de outro UDP
-			print_info(count, ntohs(udp->uh_ulen));
-			
-			package = (package_info *)(packet + LIBNET_ETH_H + size_ip + 2*LIBNET_UDP_H);
+	udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H); // Pacote UDP dentro de outro UDP
+	
+	package = (package_info *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H);
+	print_info(count, ntohs(udp->uh_ulen));
+	
+	ip_addr_p = (u_int8_t*)(&package->dst_ip_addr);
 
-			//Deveria reenviar o pacote
-			ip_addr_p = (u_int8_t*)(&package->ip_addr);
-			printf("Address read: %d.%d.%d.%d\n", ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
-		}
-		
-	}
+	printf("\tPorta de Origem - Wrap: %d - ", ntohs(wrap_udp->uh_sport));
+	printf("\tPorta Destino- Wrap: %d\n", ntohs(wrap_udp->uh_dport));
+	printf("\tAddress read: %d.%d.%d.%d\n", ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
+	printf("\tTamanho do pacote: %d\n", ntohs(udp->uh_ulen));
+//	printf("\tPorta de Origem: %d - ", ntohs(udp->uh_sport));
+//	printf("\tPorta Destino: %d\n", ntohs(udp->uh_dport));
+	
+//	payload = (package_info *)(packet + LIBNET_ETH_H + size_ip + 2*LIBNET_UDP_H);
+//	send_data(udp->uh_sport, payload, ntohs(udp->uh_ulen), ip_addr);
+	
+	/*
+
+	//Deveria reenviar o pacote
+	*/
+	
 
 	return;
 }

@@ -33,11 +33,12 @@ u_int32_t convert_address(char *ip_addr_str) {
 	return ip_addr;
 }
  
-int send_data(u_int16_t destination_port, u_int8_t *payload, u_int32_t payload_s, u_int32_t ip_addr) {
+int send_data(u_int16_t destination_port, package_info *package, u_int32_t payload_s, u_int32_t ip_addr) {
 	int i;
 	int checksum = 0;
 	u_int16_t id;
 	u_int8_t *ip_addr_p;
+	u_char *payload;
 	
 	printf("\tPorta de Origem: %d - ", SOURCE_PORT);
 	printf("\tPorta Destino: %d\n", destination_port);
@@ -52,7 +53,7 @@ int send_data(u_int16_t destination_port, u_int8_t *payload, u_int32_t payload_s
 	}
 
 	/* Building UDP packet */
-	udp_tag = libnet_build_udp(SOURCE_PORT, destination_port, LIBNET_UDP_H + payload_s, 0, payload, payload_s, l, udp_tag);
+	udp_tag = libnet_build_udp(SOURCE_PORT, destination_port, LIBNET_UDP_H + payload_s, 0, (u_int8_t *) package, payload_s, l, udp_tag);
 	if (udp_tag == -1) {
 		fprintf(stderr, "Error building UDP packet: %s\n",\
 				libnet_geterror(l));
