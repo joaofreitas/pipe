@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 			data->constant_union.server_data = malloc(sizeof(server_structure));
 			data->constant_union.server_data->s_port = atoi(argv[2]);
 
-			printf("Iniciando modo server na porta %d\n", data->constant_union.client_data->s_port);
+			printf("Modo server. Porta %d.", data->constant_union.client_data->s_port);
 			create_sniffer("eth0", data);
 		} else {
 			data->tag = CLIENT;

@@ -119,13 +119,15 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 void 
 create_sniffer(const char *dev, const ip_info *data) 
 {
-	char errbuf[PCAP_ERRBUF_SIZE];		/* error buffer */
-	pcap_t *handle;				/* packet capture handle */
-
-	char filter_exp[] = "udp";		/* filter expression [3] */
-	struct bpf_program fp;			/* compiled filter program (expression) */
-	bpf_u_int32 mask;			/* subnet mask */
-	bpf_u_int32 net;			/* ip */
+	pcap_t *handle;								/* packet capture handle */
+	bpf_u_int32 mask;							/* subnet mask */
+	bpf_u_int32 net;							/* ip */
+	struct bpf_program fp;						/* compiled filter program (expression) */
+	
+	void *callback_func;
+	char errbuf[PCAP_ERRBUF_SIZE];				/* error buffer */
+	char buffer[] = "udp dst port";				/* filter expression [3] */
+	char filter_exp[30];
 
 	if (dev == NULL) {
 
@@ -144,6 +146,15 @@ create_sniffer(const char *dev, const ip_info *data)
 		net = 0;
 		mask = 0;
 	}
+	
+	if (data->tag == SERVER_MODE) {
+		listen_port = data->constant_union.server_data->s_port;
+		callback_func = &got_packet_server;
+	} else {
+		host_addr = data->constant_union.client_data->ip_addr;
+		listen_port = data->constant_union.client_data->s_port;
+		callback_func = &got_packet_client;
+	}
 
 	/* print capture info */
 	printf("Device: %s\n", dev);
@@ -160,6 +171,10 @@ create_sniffer(const char *dev, const ip_info *data)
 		fprintf(stderr, "%s is not an Ethernet\n", dev);
 		exit(EXIT_FAILURE);
 	}
+	
+	/* Assembling new filter expression */
+	sprintf (filter_exp, "%s %d", buffer, listen_port);
+	printf("Filtro: %s\n", filter_exp);
 
 	/* compile the filter expression */
 	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
@@ -180,14 +195,7 @@ create_sniffer(const char *dev, const ip_info *data)
 		exit(EXIT_FAILURE);
 	}
 	
-	if (data->tag == SERVER_MODE) {
-		listen_port = data->constant_union.server_data->s_port;
-		pcap_loop(handle, LOOP_SNIFF, got_packet_server, NULL);
-	} else {
-		host_addr = data->constant_union.client_data->ip_addr;
-		listen_port = data->constant_union.client_data->s_port;
-		pcap_loop(handle, LOOP_SNIFF, got_packet_client, NULL);
-	}
+	pcap_loop(handle, LOOP_SNIFF, callback_func, NULL);
 	
 	/* cleanup */
 	pcap_freecode(&fp);
