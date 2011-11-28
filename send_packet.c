@@ -4,8 +4,12 @@ libnet_ptag_t udp_tag = LIBNET_PTAG_INITIALIZER;
 libnet_ptag_t ip_tag = LIBNET_PTAG_INITIALIZER;
 libnet_ptag_t icmp_tag = LIBNET_PTAG_INITIALIZER;
 
+int cabecalho_criado = 0;
+
 u_int8_t TYPE_OF_SERVICE = 0; //Routine
 u_int8_t DEFAULT_TTL = 64;
+
+u_int16_t SOURCE_PORT = 20000;
 
 libnet_t *l;	/* libnet context */
  
@@ -42,14 +46,14 @@ u_int32_t convert_address(char *ip_addr_str) {
 	return ip_addr;
 }
  
-int send_data(u_int16_t sp, u_int16_t dp, u_int8_t *payload, u_int32_t payload_s, u_int32_t ip_addr) {
+int send_data(u_int16_t destination_port, u_int8_t *payload, u_int32_t payload_s, u_int32_t ip_addr) {
 	int i;
 	int checksum = 0;
 	u_int16_t id;
 	u_int8_t *ip_addr_p;
 	
-	printf("\tPorta de Origem: %d - ", ntohs(sp));
-	printf("\tPorta Destino: %d\n", ntohs(dp));
+	printf("\tPorta de Origem: %d - ", SOURCE_PORT);
+	printf("\tPorta Destino: %d\n", destination_port);
 	printf("\tTamanho do pacote a ser enviado: %d\n",  payload_s);
 	
 	libnet_seed_prand(l);
@@ -57,33 +61,31 @@ int send_data(u_int16_t sp, u_int16_t dp, u_int8_t *payload, u_int32_t payload_s
 
 	if ( ip_addr == -1 ) {
 		fprintf(stderr, "Error converting IP address.\n");
-		libnet_destroy(l);
-		init_context_libnet();
 		return -1;
 	}
 
 	/* Building UDP packet */
-	if (libnet_build_udp(sp, dp, LIBNET_UDP_H + payload_s, 0, payload, payload_s, l, 0) == -1) {
+	udp_tag = libnet_build_udp(SOURCE_PORT, destination_port, LIBNET_UDP_H + payload_s, 0, payload, payload_s, l, udp_tag);
+	if (udp_tag == -1) {
 		fprintf(stderr, "Error building UDP packet: %s\n",\
 				libnet_geterror(l));
-		libnet_destroy(l);
-		init_context_libnet();
 		return -1;
 	}
 	
-	ip_tag = libnet_autobuild_ipv4(LIBNET_IPV4_H + LIBNET_UDP_H + payload_s, IPPROTO_UDP, ip_addr, l);
+	if (cabecalho_criado == 0) {
+		ip_tag = libnet_autobuild_ipv4(LIBNET_IPV4_H + LIBNET_UDP_H + payload_s, IPPROTO_UDP, ip_addr, l);
 
-	if (ip_tag == -1) {
-		fprintf(stderr, "Error building IP header: %s\n",\
-				libnet_geterror(l));
-		return -1;
+		if (ip_tag == -1) {
+			fprintf(stderr, "Error building IP header: %s\n",\
+					libnet_geterror(l));
+			return -1;
+		}
+		cabecalho_criado = 1;
 	}
+	
 
-	//Ele tá dando pau aqui por causa da fragmentação
-	if ( libnet_write(l) == -1 ) {
+	if (libnet_write(l) == -1 ) {
 		fprintf(stderr, "Error writing packet: %s\n", libnet_geterror(l));
-		libnet_destroy(l);
-		init_context_libnet();
 		return -1;
 	}
 	

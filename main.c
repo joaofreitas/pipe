@@ -9,7 +9,6 @@ int SERVER = 1;
 
 int main(int argc, char *argv[]) {
 	ip_info *data;
-//	unsigned char payload[] = "libnet :D";
 
 	if (argc > 2) {
 		data = malloc(sizeof(ip_info));
@@ -34,10 +33,6 @@ int main(int argc, char *argv[]) {
 		printf("Exemplo de uso para server: ./pipe -S 1900\n");
 		printf("Exemplo de uso para cliente: ./pipe 192.168.0.157 1234\n");
 	}
-/*
-	if (send_data(22345, 22345, LIBNET_UDP_H, payload, sizeof(payload), "192.168.0.157") == -1) {
-		printf("Deu pau\n");
-	}
-*/
+
 	return 0;
 }
