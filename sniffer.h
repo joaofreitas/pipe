@@ -8,7 +8,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "structures.h"
 #include "send_packet.h"
 
 void

@@ -79,12 +79,12 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 {
 	/* declare pointers to packet headers */
 	const struct libnet_ipv4_hdr *ip;              /* The IP header */
-	const struct libnet_udp_hdr *udp;		/* The UDP header */
+	const struct libnet_udp_hdr *wrap_udp, *udp;		/* The UDP header */
 	package_info *package;
 	u_char *payload;
 	u_int8_t *ip_addr_p;					//Isso é para fins de teste
 	
-	static int count = 1;                   /* packet counter */
+	static int count = 1;					/* packet counter */
 	int size_ip;
 	
 
@@ -97,13 +97,15 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	}
 
 	if (ip->ip_p == IPPROTO_UDP) {
-		udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
+		wrap_udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
 		count++;
 
-		if (ntohs(udp->uh_dport) == listen_port) {
+		if (ntohs(wrap_udp->uh_dport) == listen_port) {
+			udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H); // Pacote UDP dentro de outro UDP
 			print_info(count, ntohs(udp->uh_ulen));
-			package = (package_info *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H);
 			
+			package = (package_info *)(packet + LIBNET_ETH_H + size_ip + 2*LIBNET_UDP_H);
+
 			//Deveria reenviar o pacote
 			ip_addr_p = (u_int8_t*)(&package->ip_addr);
 			printf("Address read: %d.%d.%d.%d\n", ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
@@ -178,8 +180,6 @@ create_sniffer(const char *dev, const ip_info *data)
 		exit(EXIT_FAILURE);
 	}
 	
-	printf("listen port: %d", listen_port);
-
 	if (data->tag == SERVER_MODE) {
 		listen_port = data->constant_union.server_data->s_port;
 		pcap_loop(handle, LOOP_SNIFF, got_packet_server, NULL);

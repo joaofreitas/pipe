@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 			data->constant_union.server_data->s_port = atoi(argv[2]);
 
 			printf("Iniciando modo server na porta %d\n", data->constant_union.client_data->s_port);
-			create_sniffer("wlan0", data);
+			create_sniffer("eth0", data);
 		} else {
 			data->tag = CLIENT;
 			data->constant_union.client_data = malloc(sizeof(client_structure));
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 			data->constant_union.client_data->s_port = atoi(argv[2]);
 
 			printf("Iniciando modo cliente enviando na porta %d\n", data->constant_union.server_data->s_port);
-			create_sniffer("wlan0", data);
+			create_sniffer("eth0", data);
 		}
 	} else {
 		printf("Exemplo de uso para server: ./pipe -S 1900\n");

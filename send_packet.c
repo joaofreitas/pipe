@@ -15,7 +15,7 @@ libnet_t *l;	/* libnet context */
  
 int init_context_libnet() {
 	char errbuf[LIBNET_ERRBUF_SIZE];
-	l = libnet_init(LIBNET_RAW4, "wlan0", errbuf);
+	l = libnet_init(LIBNET_RAW4, "eth0", errbuf);
 	
 	if ( l == NULL ) {
 		fprintf(stderr, "libnet_init() failed: %s\n", errbuf);
@@ -25,24 +25,11 @@ int init_context_libnet() {
 	return 1;
 }
 
-u_int32_t get_own_address() {
-	u_int32_t ip_addr;
-
-	ip_addr = libnet_get_ipaddr4(l);
-	if ( ip_addr == -1 ) {
-		printf("IP resolve address error: %s\n", libnet_addr2name4(ip_addr, LIBNET_RESOLVE));
-		return -1;
-	}
-	
-	return ip_addr;
-		
-}
-
 u_int32_t convert_address(char *ip_addr_str) {
 	u_int32_t ip_addr;
 	
 	ip_addr = libnet_name2addr4(l, ip_addr_str, LIBNET_RESOLVE);
-	
+
 	return ip_addr;
 }
  
