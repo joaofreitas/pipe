@@ -5,6 +5,7 @@
 
 typedef struct client_data_structure {
 	int s_port;
+	int d_port;
 	char *ip_addr;
 } client_structure;
 

@@ -24,7 +24,8 @@ int main(int argc, char *argv[]) {
 			data->tag = CLIENT;
 			data->constant_union.client_data = malloc(sizeof(client_structure));
 			data->constant_union.client_data->ip_addr = argv[1];
-			data->constant_union.client_data->s_port = atoi(argv[2]);
+			data->constant_union.client_data->d_port = atoi(argv[2]);
+			data->constant_union.client_data->s_port = 9000;		//Por enquanto, é a 80
 
 			printf("Iniciando modo cliente enviando na porta %d\n", data->constant_union.server_data->s_port);
 			create_sniffer("eth0", data);

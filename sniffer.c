@@ -45,6 +45,7 @@ create_package(struct in_addr ip_addr, u_int8_t *payload){
 	package = malloc(sizeof(package_info ));
 
 	ip_addr_str = inet_ntoa(ip_addr);
+	printf("Endereço convertido: %s", ip_addr_str);
 	package->dst_ip_addr = convert_address(ip_addr_str);;
 	package->payload = payload;
 	
@@ -116,19 +117,19 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	wrap_udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
 	count++;
 
-	udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H); // Pacote UDP dentro de outro UDP
-	
 	package = (package_info *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H);
-	print_info(count, ntohs(udp->uh_ulen));
-	
-	ip_addr_p = (u_int8_t*)(&package->dst_ip_addr);
+	udp = (struct libnet_udp_hdr*) package->payload; // Pacote UDP dentro de outro UDP
 
+	print_info(count, ntohs(udp->uh_ulen));
+
+	ip_addr_p = (u_int8_t*)(&package->dst_ip_addr);
+/*
 	printf("\tPorta de Origem - Wrap: %d - ", ntohs(wrap_udp->uh_sport));
 	printf("\tPorta Destino- Wrap: %d\n", ntohs(wrap_udp->uh_dport));
-	printf("\tAddress read: %d.%d.%d.%d\n", ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
-	printf("\tTamanho do pacote: %d\n", ntohs(udp->uh_ulen));
-//	printf("\tPorta de Origem: %d - ", ntohs(udp->uh_sport));
-//	printf("\tPorta Destino: %d\n", ntohs(udp->uh_dport));
+	printf("\tPorta de Origem: %d - ", ntohs(udp->uh_sport));
+	printf("\tPorta Destino: %d\n", ntohs(udp->uh_dport));*/
+	printf("\tEndereço: %d.%d.%d.%d\n", ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
+//	printf("\tTamanho do pacote: %d\n", ntohs(udp->uh_ulen));
 	
 //	payload = (package_info *)(packet + LIBNET_ETH_H + size_ip + 2*LIBNET_UDP_H);
 //	send_data(udp->uh_sport, payload, ntohs(udp->uh_ulen), ip_addr);
