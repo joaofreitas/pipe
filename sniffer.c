@@ -16,6 +16,7 @@ GLOBAIS
 
 int LOOP_SNIFF = -1;			/* Sniffer vai ficar em loop */
 int listen_port = 0;
+int destination_port = 0;
 char *host_addr;
 
 int CLIENT_MODE = 0;
@@ -42,11 +43,10 @@ create_package(struct in_addr ip_addr, u_int8_t *payload){
 	package_info *package;
 	char *ip_addr_str;
 	
-	package = malloc(sizeof(package_info ));
+	package = malloc(sizeof(package_info));
 
 	ip_addr_str = inet_ntoa(ip_addr);
-	printf("Endereço convertido: %s", ip_addr_str);
-	package->dst_ip_addr = convert_address(ip_addr_str);;
+	package->dst_ip_addr = convert_address(ip_addr_str);
 	package->payload = payload;
 	
 	return package;
@@ -84,15 +84,14 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	ip_addr = convert_address(host_addr);
 	
 	package = create_package(ip->ip_src, payload);
-	package_size = ntohs(udp->uh_ulen)+sizeof(package_info);
-	send_data(listen_port, package, package_size, ip_addr);
+	package_size = ntohs(udp->uh_ulen)+sizeof(u_int32_t);
+	
+	//Envia de uma porta padrão, por isso mandei 0
+	send_data(0, destination_port, package, package_size, ip_addr);
 
 	return;
 }
 
-/*
- * dissect/print packet
- */
 void
 got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
@@ -118,7 +117,7 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	count++;
 
 	package = (package_info *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H);
-	udp = (struct libnet_udp_hdr*) package->payload; // Pacote UDP dentro de outro UDP
+	udp = (struct libnet_udp_hdr*) (package_info *)(packet + LIBNET_ETH_H + size_ip + 2*LIBNET_UDP_H); // Pacote UDP dentro de outro UDP
 
 	print_info(count, ntohs(udp->uh_ulen));
 
@@ -180,6 +179,7 @@ create_sniffer(const char *dev, const ip_info *data)
 	} else {
 		host_addr = data->constant_union.client_data->ip_addr;
 		listen_port = data->constant_union.client_data->s_port;
+		destination_port = data->constant_union.client_data->d_port;
 		callback_func = &got_packet_client;
 	}
 

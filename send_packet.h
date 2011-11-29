@@ -13,4 +13,4 @@ u_int32_t
 convert_address(char *ip_addr_str);
 
 int
-send_data(u_int16_t dp, package_info *package, u_int32_t payload_s, u_int32_t ip_addr);
+send_data(u_int16_t source_port, u_int16_t destination_port, package_info *package, u_int32_t payload_s, u_int32_t ip_addr);
