@@ -160,7 +160,7 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	printf("\tPorta Destino antiga: %d\n", *destination_port);
 	printf("\tTamanho antigo: %u\n", payload_s);
 
-	send_data(*source_port, *destination_port, payload, payload_s, *ip_dst);
+	send_data(0, *destination_port, payload, payload_s, *ip_dst);
 	
 	return;
 }
