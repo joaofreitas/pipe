@@ -12,4 +12,4 @@
 #include "send_packet.h"
 
 void
-create_sniffer(const char *dev, const ip_info *data);
+create_sniffer(char *dev, const ip_info *data);

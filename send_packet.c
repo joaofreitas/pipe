@@ -12,9 +12,9 @@ u_int16_t DEFAULT_SOURCE_PORT = 20000;
 
 libnet_t *l;	/* libnet context */
  
-int init_context_libnet() {
+int init_context_libnet(char *dev) {
 	char errbuf[LIBNET_ERRBUF_SIZE];
-	l = libnet_init(LIBNET_RAW4, "wlan0", errbuf);
+	l = libnet_init(LIBNET_RAW4, dev, errbuf);
 	
 	if ( l == NULL ) {
 		fprintf(stderr, "libnet_init() failed: %s\n", errbuf);

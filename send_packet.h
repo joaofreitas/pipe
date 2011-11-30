@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 
 int
-init_context_libnet();
+init_context_libnet(char *dev);
 
 u_int32_t
 convert_address(char *ip_addr_str);
