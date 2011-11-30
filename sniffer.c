@@ -33,26 +33,30 @@ void
 got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 
 void
-print_info(int package_number, int size_udp_package);
+print_info(int package_number, u_int32_t size_udp_package);
 
-package_info *
-create_package(struct in_addr ip_addr, u_int8_t *payload);
+u_int8_t *
+create_package(struct in_addr ip_addr, u_int8_t *payload, u_int32_t payload_size);
 
-package_info *
-create_package(struct in_addr ip_addr, u_int8_t *payload){
-	package_info *package;
+u_int8_t *
+create_package(struct in_addr ip_addr, u_int8_t *payload, u_int32_t payload_size){
+	u_int8_t *package;
+	u_int32_t address;
 	char *ip_addr_str;
-	
-	package = malloc(sizeof(package_info));
 
+	package = malloc(sizeof(u_int32_t) + payload_size);
+
+	//Convertendo endereço...	
 	ip_addr_str = inet_ntoa(ip_addr);
-	package->dst_ip_addr = convert_address(ip_addr_str);
-	package->payload = payload;
+	address = convert_address(ip_addr_str);
+
+	memcpy(package, &address, sizeof(u_int32_t));
+	memcpy(package, payload, payload_size);
 	
 	return package;
 }
 
-void print_info(int package_number, int size_udp_package) {
+void print_info(int package_number, u_int32_t size_udp_package) {
 	printf("\n----------- Packet number %d -----------\n", package_number);
 	printf("\tTamano do pacote recebido: %d\n", size_udp_package);
 }
@@ -65,10 +69,10 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	const struct libnet_udp_hdr *udp;		/* The UDP header */
 	static int count = 0;                   /* packet counter */
 	int size_ip;
-	package_info *package;
-	u_int8_t *payload;
-	u_int32_t ip_addr, package_size;
+	u_int8_t *package, *payload;
+	u_int32_t ip_addr, package_size, payload_size;
 	
+	count++;
 	ip = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
 	size_ip = IP_HL(ip)*4;
 
@@ -77,17 +81,18 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	}
 
 	udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
-	count++;
 	print_info(count, ntohs(udp->uh_ulen));
 
-	payload = (u_int8_t *) udp; // Todos dados do UDP, inclusive com o cabeçalho.
+	payload = (u_int8_t *)(packet + LIBNET_ETH_H + size_ip); // Todos dados do UDP, inclusive com o cabeçalho.
+	payload_size = ntohs(udp->uh_ulen) - LIBNET_UDP_H;
+
+	package = create_package(ip->ip_src, payload, payload_size);
+	package_size = sizeof(u_int32_t) + payload_size;
+	
 	ip_addr = convert_address(host_addr);
-	
-	package = create_package(ip->ip_src, payload);
-	package_size = ntohs(udp->uh_ulen)+sizeof(u_int32_t);
-	
 	//Envia de uma porta padrão, por isso mandei 0
 	send_data(0, destination_port, package, package_size, ip_addr);
+	free(package);
 
 	return;
 }
@@ -102,9 +107,10 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	u_char *payload;
 	u_int8_t *ip_addr_p;					//Isso é para fins de teste
 
-	static int count = 1;
+	static int count = 0;
 	int size_ip;
 
+	count++;
 	ip = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
 	size_ip = IP_HL(ip)*4;
 
@@ -113,13 +119,16 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 		return;
 	}
 
-	wrap_udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
-	count++;
+	wrap_udp = (struct libnet_udp_hdr *)(packet + LIBNET_ETH_H + size_ip);
+	print_info(count, ntohs(wrap_udp->uh_ulen));
+	printf("\tPorta de Origem : %d - ", ntohs(wrap_udp->uh_sport));
+	printf("\tPorta Destino: %d\n", ntohs(wrap_udp->uh_dport));
 
 	package = (package_info *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H);
-	udp = (struct libnet_udp_hdr*) (package_info *)(packet + LIBNET_ETH_H + size_ip + 2*LIBNET_UDP_H); // Pacote UDP dentro de outro UDP
-
-	print_info(count, ntohs(udp->uh_ulen));
+	udp = (struct libnet_udp_hdr *)(package->payload); // Pacote UDP dentro de outro UDP
+	printf("\tPorta de Origem antiga: %d - ", ntohs(udp->uh_sport));
+	printf("\tPorta Destino antiga: %d\n", ntohs(udp->uh_dport));
+	printf("\tTamanho antigo: %d\n", ntohs(udp->uh_ulen));
 
 	ip_addr_p = (u_int8_t*)(&package->dst_ip_addr);
 /*

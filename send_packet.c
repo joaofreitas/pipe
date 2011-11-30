@@ -32,12 +32,11 @@ u_int32_t convert_address(char *ip_addr_str) {
 	return ip_addr;
 }
  
-int send_data(u_int16_t source_port, u_int16_t destination_port, package_info *package, u_int32_t payload_s, u_int32_t ip_addr) {
+int send_data(u_int16_t source_port, u_int16_t destination_port, u_char *payload, u_int32_t payload_s, u_int32_t ip_addr) {
 	int i;
 	int checksum = 0;
 	u_int16_t id;
 	u_int8_t *ip_addr_p;
-	u_char *payload;
 	
 	if (source_port == 0) {
 		source_port = DEFAULT_SOURCE_PORT;
@@ -46,7 +45,7 @@ int send_data(u_int16_t source_port, u_int16_t destination_port, package_info *p
 	printf("\tPorta de Origem: %d - ", source_port);
 	printf("\tPorta Destino: %d\n", destination_port);
 	printf("\tTamanho do pacote a ser enviado: %d\n",  payload_s);
-	printf("\t\tVou enviar para %d os dados %s\n", package->dst_ip_addr, package->payload);
+	printf("\t\tVou enviar para %d os dados %s\n", ip_addr, payload);
 	libnet_seed_prand(l);
 	id = (u_int16_t)libnet_get_prand(LIBNET_PR16);
 
@@ -56,7 +55,7 @@ int send_data(u_int16_t source_port, u_int16_t destination_port, package_info *p
 	}
 	
 	/* Building UDP packet */
-	udp_tag = libnet_build_udp(source_port, destination_port, LIBNET_UDP_H + payload_s, 0, (u_int8_t *) package, payload_s, l, udp_tag);
+	udp_tag = libnet_build_udp(source_port, destination_port, LIBNET_UDP_H + payload_s, 0, payload, payload_s, l, udp_tag);
 	if (udp_tag == -1) {
 		fprintf(stderr, "Error building UDP packet: %s\n",\
 				libnet_geterror(l));
