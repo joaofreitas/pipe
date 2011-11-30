@@ -54,7 +54,7 @@ create_package(char *ip_addr_str, u_int32_t source_port, u_int32_t destination_p
 	u_int32_t address;
 	
 
-	package = malloc(sizeof(u_int32_t) + payload_size);
+	package = malloc(3*sizeof(u_int32_t) + payload_size);
 
 	address = convert_address(ip_addr_str);
 
@@ -68,7 +68,7 @@ create_package(char *ip_addr_str, u_int32_t source_port, u_int32_t destination_p
 
 void print_info(int package_number, u_int32_t size_udp_package) {
 	printf("\n----------- Packet number %d -----------\n", package_number);
-	printf("\tTamano do pacote recebido: %d\n", size_udp_package);
+	printf("\tTamano do pacote recebido (com header): %d\n", size_udp_package);
 }
 
 void

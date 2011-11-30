@@ -7,7 +7,7 @@
 int CLIENT = 0;
 int SERVER = 1;
 
-char *DEVICE="wlan0";
+char *DEVICE="lo";
 
 int main(int argc, char *argv[]) {
 	ip_info *data;

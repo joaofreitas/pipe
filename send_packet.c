@@ -45,7 +45,7 @@ int send_data(u_int16_t source_port, u_int16_t destination_port, u_char *payload
 	ip_addr_p = (u_int8_t *)(&ip_addr);
 	printf("\tPorta de Origem: %d - ", source_port);
 	printf("\tPorta Destino: %d\n", destination_port);
-	printf("\tTamanho do pacote a ser enviado: %d\n",  payload_s);
+	printf("\tTamanho do pacote a ser enviado (sem header): %d\n",  payload_s);
 	printf("\tVou reenviar para: %d.%d.%d.%d\n", ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
 	
 	libnet_seed_prand(l);
