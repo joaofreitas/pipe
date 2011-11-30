@@ -111,9 +111,8 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	
 	ip_addr = convert_address(host_addr);
 	
-	//Envia por porta padrão, por isso mandei 0
+	//Envia pela porta padrão, por isso mandei 0
 	send_data(0, destination_port, package, package_size, ip_addr);
-	free(package);
 
 	return;
 }

@@ -68,7 +68,9 @@ int main(int argc, char *argv[]) {
 		}
 	} else {
 		printf("Exemplo de uso para server: ./pipe -S 1900\n");
-		printf("Exemplo de uso para cliente: ./pipe 192.168.0.157 1234\n");
+		printf("Exemplos de uso para cliente:\n\t./pipe 192.168.0.157 1234\n");
+		printf("\tsudo ./pipe -L 23000:127.0.0.1:15000 127.0.0.1 28000\n");
+		
 	}
 
 	return 0;
