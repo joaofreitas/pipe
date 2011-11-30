@@ -104,7 +104,6 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	const struct libnet_ipv4_hdr *ip;              /* The IP header */
 	const struct libnet_udp_hdr *wrap_udp, *udp;		/* The UDP header */
 	u_char *payload;
-	u_int8_t *ip_addr_p;					//Isso é para fins de teste
 	u_int32_t *ip_dst, payload_s;
 
 	static int count = 0;
@@ -138,10 +137,6 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	printf("\tPorta de Origem antiga: %d - ", ntohs(udp->uh_sport));
 	printf("\tPorta Destino antiga: %d\n", ntohs(udp->uh_dport));
 	printf("\tTamanho antigo: %u\n", ntohs(udp->uh_ulen));
-
-	ip_addr_p = (u_int8_t*)(ip_dst);
-
-	printf("\tVou reenviar para: %d.%d.%d.%d\n", ip_addr_p[0], ip_addr_p[1], ip_addr_p[2], ip_addr_p[3]);
 
 	send_data(udp->uh_sport, udp->uh_dport, payload, payload_s, *ip_dst);
 	
