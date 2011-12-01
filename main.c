@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 			data->constant_union.client_data->s_port = atoi(l_port);
 			data->constant_union.client_data->redirect = redirect_data;
 
-			printf("Iniciando modo cliente escutando porta padrão %s, enviar para %s:%d e o server reencaminha para %s:%d\n", 
+			printf("Iniciando modo cliente escutando porta %s, enviar para %s:%d e o server reencaminha para %s:%d\n", 
 					l_port,
 					data->constant_union.client_data->ip_addr,
 					data->constant_union.client_data->d_port,

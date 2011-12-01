@@ -3,7 +3,7 @@ NAME = pipe
 CC = gcc
 
 all : host_table.o send_packet.o sniffer.o
-	$(CC) -o $(NAME) main.c send_packet.o sniffer.o -g -Wall -lnet -lpcap
+	$(CC) -o $(NAME) main.c host_table.o send_packet.o sniffer.o -g -Wall -lnet -lpcap
 	make clean
 
 host_table.o:

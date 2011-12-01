@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "send_packet.h"
+#include "host_table.h"
 
 void
 create_sniffer(char *dev, const ip_info *data);

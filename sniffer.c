@@ -17,13 +17,12 @@ GLOBAIS
 const int LOOP_SNIFF = -1;			/* Sniffer vai ficar em loop */
 const int CLIENT_MODE = 0;
 const int SERVER_MODE = 1;
-const u_int32_t REDIRECT = 0x300;
 
 int listen_port = 0;
 int destination_port = 0;
 char *host_addr;
 redirect_info *redirect_data;
-
+redirect_table *table;
 
 /************************
 FUNCÕES
@@ -120,18 +119,22 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 void
 got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
-	/* declare pointers to packet headers */
 	const struct libnet_ipv4_hdr *ip;             		/* The IP header */
 	const struct libnet_udp_hdr *wrap_udp;		/* The UDP header */
-	u_char *payload;
+	struct in_addr src_ip;
+	u_char *payload, *dst_ip_src;
 	u_int32_t *ip_dst, *source_port, *destination_port, payload_s;
 
 	static int count = 0;
+	char *ip_addr_str;
 	int size_ip;
 
 	count++;
 	ip = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
 	size_ip = IP_HL(ip)*4;
+	
+	ip_addr_str = inet_ntoa(ip->ip_dst);
+	convert_address(ip_addr_str);
 
 	if (size_ip < 20) {
 		printf("   * Invalid IP header length: %u bytes\n", size_ip);
@@ -145,6 +148,8 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 
 
 	ip_dst = (u_int32_t *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H);
+	
+	dst_ip_src = libnet_addr2name4(*ip_dst, LIBNET_DONT_RESOLVE);
 	source_port = (u_int32_t *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H + sizeof(u_int32_t));
 	destination_port = (u_int32_t *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H + sizeof(u_int32_t)*2);
 
@@ -160,7 +165,8 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	printf("\tPorta Destino antiga: %d\n", *destination_port);
 	printf("\tTamanho antigo: %u\n", payload_s);
 
-	send_data(0, *destination_port, payload, payload_s, *ip_dst);
+	/* O servidor enviará o pacote pela mesma porta que recebeu, para não ser necessário refazer o sniffer. */
+	send_data(listen_port, *destination_port, payload, payload_s, *ip_dst);
 	
 	return;
 }
