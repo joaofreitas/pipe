@@ -95,7 +95,9 @@ got_packet_client(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	}
 
 	udp = (struct libnet_udp_hdr*)(packet + LIBNET_ETH_H + size_ip);
+	#ifdef VERBOSE_MODE
 	print_info(count, ntohs(udp->uh_ulen));
+	#endif
 
 	payload = (u_int8_t *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H);
 	payload_size = ntohs(udp->uh_ulen) - LIBNET_UDP_H;
@@ -142,9 +144,11 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	}
 
 	wrap_udp = (struct libnet_udp_hdr *)(packet + LIBNET_ETH_H + size_ip);
+	#ifdef VERBOSE_MODE
 	print_info(count, ntohs(wrap_udp->uh_ulen));
 	printf("\tPorta de Origem : %d - ", ntohs(wrap_udp->uh_sport));
 	printf("\tPorta Destino: %d\n", ntohs(wrap_udp->uh_dport));
+	#endif
 
 
 	ip_dst = (u_int32_t *)(packet + LIBNET_ETH_H + size_ip + LIBNET_UDP_H);
@@ -161,9 +165,11 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 		payload_s = 0;
 	}
 
+	#ifdef VERBOSE_MODE
 	printf("\tPorta de Origem antiga: %d - ", *source_port);
 	printf("\tPorta Destino antiga: %d\n", *destination_port);
 	printf("\tTamanho antigo: %u\n", payload_s);
+	#endif
 
 	/* O servidor enviará o pacote pela mesma porta que recebeu, para não ser necessário refazer o sniffer. */
 	send_data(listen_port, *destination_port, payload, payload_s, *ip_dst);
@@ -213,8 +219,10 @@ create_sniffer(char *dev, const ip_info *data)
 		redirect_data = data->constant_union.client_data->redirect;
 	}
 
+	#ifdef VERBOSE_MODE
 	/* print capture info */
 	printf("Device: %s\n", dev);
+	#endif
 
 	/* open capture device */
 	handle = pcap_open_live(dev, SNAP_LEN, 1, 1000, errbuf);
@@ -231,7 +239,9 @@ create_sniffer(char *dev, const ip_info *data)
 	
 	/* Assembling new filter expression */
 	sprintf (filter_exp, "%s %d", buffer, listen_port);
+	#ifdef VERBOSE_MODE
 	printf("Filtro: %s\n", filter_exp);
+	#endif
 
 	/* compile the filter expression */
 	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {

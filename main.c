@@ -22,7 +22,9 @@ int main(int argc, char *argv[]) {
 			data->constant_union.server_data = malloc(sizeof(server_structure));
 			data->constant_union.server_data->s_port = atoi(argv[2]);
 
+			#ifdef VERBOSE_MODE
 			printf("Modo server. Porta %d.", data->constant_union.client_data->s_port);
+			#endif
 			create_sniffer(DEVICE, data);
 		} else if (strcmp(argv[1], "-L") == 0) {
 			l_port = strtok(argv[2], delimitador);
@@ -40,12 +42,14 @@ int main(int argc, char *argv[]) {
 			data->constant_union.client_data->s_port = atoi(l_port);
 			data->constant_union.client_data->redirect = redirect_data;
 
+			#ifdef VERBOSE_MODE
 			printf("Iniciando modo cliente escutando porta %s, enviar para %s:%d e o server reencaminha para %s:%d\n", 
 					l_port,
 					data->constant_union.client_data->ip_addr,
 					data->constant_union.client_data->d_port,
 					redirect_data->dst_ip,
 					redirect_data->dst_port);
+			#endif
 
 			create_sniffer(DEVICE, data);
 
