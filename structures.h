@@ -1,6 +1,6 @@
 #ifndef __STRUCTURES_H
 #define __STRUCTURES_H
-
+#define VERBOSE_MODE
 #include <stdio.h>
 
 typedef struct redirect_message_structure {

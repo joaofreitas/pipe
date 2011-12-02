@@ -134,6 +134,8 @@ got_packet_server(u_char *args, const struct pcap_pkthdr *header, const u_char *
 	count++;
 	ip = (struct libnet_ipv4_hdr*)(packet + LIBNET_ETH_H);
 	size_ip = IP_HL(ip)*4;
+
+	printf("Chegou\n");
 	
 	ip_addr_str = inet_ntoa(ip->ip_dst);
 	convert_address(ip_addr_str);

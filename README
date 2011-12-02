@@ -1,0 +1,21 @@
+Nome: João Paulo de Freitas Matos
+Matrícula: 09/47636
+
+INSTRUÇÕES DE COMPILAÇÃO
+ - O programa faz uso de makefile, então basta digitar no terminal:
+	make
+	
+INSTRUÇÕES DE USO
+ - O programa está previamente configurado para funcionar na interface "wlan0". Caso haja a necessidade de funcionamento em outra interface, é necessário mudar a linha 10 do arquivo main.c, informando a nova interface a ser usada e recompilar novamente. Por exemplo:
+
+	char *DEVICE="eth0";
+
+Após a compilação, a execução do programa ocorre da seguinte maneira
+
+sudo ./pipe -S 1900 - Modo server escutando na porta 1900.
+sudo ./pipe -L 23000:127.0.0.1:15000 127.0.0.1 28000- Modo cliente escutando na porta 23000, enviando para o servidor 127.0.0.1:28000 e o servidor irá reencaminhar para 127.0.0.1:15000.
+
+OUTRAS CONSIDERAÇÕES
+
+ - O trabalho não implementa a opção -R.
+ - Caso seja necessário verificar pacotes, mostrar informações mais detalhadas, etc., o programa possui a opção VERBOSE. Basta descomentar a linha 4, do arquivo structures.h (#define VERBOSE_MODE) e recompilar o programa novamente. Ele irá então detalhar toda a transmissão de pacotes.
